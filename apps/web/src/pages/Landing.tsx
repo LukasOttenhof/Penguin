@@ -88,8 +88,8 @@ export default function Landing() {
           <a href="#safety">Safety</a>
         </nav>
         <div className="lp-nav-actions">
-          <Link to="/app" className="lp-btn lp-btn-ghost">Log in</Link>
-          <Link to="/app" className="lp-btn lp-btn-primary">Get started</Link>
+          <Link to="/login" className="lp-btn lp-btn-ghost">Log in</Link>
+          <Link to="/signup" className="lp-btn lp-btn-primary">Get started</Link>
         </div>
       </header>
 
@@ -102,7 +102,7 @@ export default function Landing() {
             and gives you the tools to plan units, set the rules and see exactly where your class needs help.
           </p>
           <div className="lp-hero-actions">
-            <Link to="/login?role=teacher" className="lp-btn lp-btn-primary lp-btn-lg">Create a teacher account</Link>
+            <Link to="/signup" className="lp-btn lp-btn-primary lp-btn-lg">Create a teacher account</Link>
             <Link to="/login?role=student" className="lp-btn lp-btn-ghost lp-btn-lg">I'm a student</Link>
           </div>
         </div>
@@ -182,7 +182,7 @@ export default function Landing() {
       <section className="lp-cta">
         <h2>Ready to bring Penguin to your classroom?</h2>
         <p>Create your class and share a join code with your students today.</p>
-        <Link to="/login" className="lp-btn lp-btn-primary lp-btn-lg">Get started — it's free</Link>
+        <Link to="/signup" className="lp-btn lp-btn-primary lp-btn-lg">Get started — it's free</Link>
       </section>
 
       <footer className="lp-footer">

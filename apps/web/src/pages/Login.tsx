@@ -21,15 +21,38 @@ export default function Login() {
     setLoading(true);
     const data = new FormData(event.currentTarget);
 
-    // 🔧 STUB — replace with POST /api/auth/login when session route is built.
-    // For now, navigate straight to the correct workspace after a short delay.
-    await new Promise(r => setTimeout(r, 600));
 
     if (role === "teacher") {
       const email = String(data.get("email") ?? "").trim();
       const password = String(data.get("password") ?? "");
       if (!email || !password) { setError("Please fill in all fields."); setLoading(false); return; }
-      navigate("/app");
+      try {
+        const res = await fetch("/api/teachers/login_teacher", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            email,
+            password,
+          }),
+        });
+
+        if (!res.ok) {
+      
+          const body = await res.json().catch(() => null);
+          setError(body?.error ?? "Couldn't login. Please try again.");
+          return;
+        }
+
+        // 200 logged in
+        navigate("/app");
+      } catch {
+        setError("Can't reach the server. Is the API running?");
+      } finally {
+        setLoading(false);
+      }
+
+      
     } else {
       const username = String(data.get("username") ?? "").trim();
       const joinCode = String(data.get("join_code") ?? "").trim();

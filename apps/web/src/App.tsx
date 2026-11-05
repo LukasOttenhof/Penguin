@@ -55,7 +55,7 @@ function App() {
   const vm = useTeacherViewModel();
   const svm = useStudentViewModel();
 
-  const [page, setPage] = useState<Page>("Classrooms");
+  const [page, setPage] = useState<Page>("Overview");
   const [menuOpen, setMenuOpen] = useState(false);
   const [modal, setModal] = useState<"assignment" | null>(null);
   const [activeClassroomId, setActiveClassroomId] = useState<number | null>(null);
@@ -148,6 +148,9 @@ function App() {
       : <div className="empty-state"><Icon name="Assignments" size={30} /><h3>No assignments found</h3><p>Create an assignment or change your filters.</p></div>;
   }
 
+  // Wait for /api/teachers/info_teacher before drawing anything that needs the teacher.
+  if (!vm.teacher) return <p style={{ padding: 40 }}>Loading…</p>;
+
   const initials = `${vm.teacher.first_name[0]}${vm.teacher.last_name[0]}`;
 
   return <div className="app-shell">
@@ -155,7 +158,7 @@ function App() {
       <a className="brand" href="#" onClick={event => { event.preventDefault(); navigate("Overview"); }}><img className="brand-logo" src={penguinLogo} width="100" height="100" alt="" />penguin<span className="brand-dot">.</span></a>
       <div className="workspace-label">YOUR WORKSPACE <span>DEMO</span></div>
       <nav>{pages.map(item => <button key={item} className={`nav-item ${page === item ? "active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={() => navigate(item)}><Icon name={item} size={30} />{item}{item === "Classrooms" && <span className="nav-count">{vm.courses.length}</span>}</button>)}</nav>
-      <div className="sidebar-bottom"><div className="sidebar-note"><Icon name="spark" /><strong>Every learner<br />belongs in the huddle.</strong><p>A little support. A big world to explore together.</p></div><div className="profile"><span className="avatar">{initials}</span><div><strong>{vm.teacher.first_name} {vm.teacher.last_name}</strong><small>Teacher · Demo account</small></div></div></div>
+      <div className="sidebar-bottom"><div className="sidebar-note"><Icon name="spark" /><strong>Every learner<br />belongs in the huddle.</strong><p>A little support. A big world to explore together.</p></div><div className="profile"><span className="avatar">{initials}</span><div><strong>{vm.teacher.first_name} {vm.teacher.last_name}</strong><small>Teacher</small></div></div></div>
     </aside>
     <div className="main-shell">
       <header className="topbar"><div className="breadcrumb"><button className="icon-button mobile-menu" aria-label="Toggle navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}><Icon name="menu" /></button><span>Workspace</span><span className="slash">/</span><strong>{page}</strong></div><span className="demo-label"><span /> Synthetic classroom demo</span></header>

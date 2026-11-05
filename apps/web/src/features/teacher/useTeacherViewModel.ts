@@ -3,7 +3,8 @@
 // Each section that talks to the API is marked:
 //   ✅ LIVE   — real API call exists
 //   🔧 STUB   — returns demo data; swap for a real fetch() when the route is built
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect} from "react";
+
 import type {
   Teacher,
   Course,
@@ -23,14 +24,6 @@ import type {
 // ─── Stub demo data ───────────────────────────────────────────────────────────
 // Remove these once the corresponding API routes are live.
 
-const STUB_TEACHER: Teacher = {
-  id: 1,
-  first_name: "Alex",
-  last_name: "Taylor",
-  email: "alex.taylor@demo.school",
-  is_admin: false,
-  created_at: "2026-09-01T00:00:00.000Z",
-};
 
 const STUB_COURSES: Course[] = [
   { id: 1, teacher_id: 1, name: "Science · Period 2", grade: 8, join_code: "CELLS-001", created_at: "2026-09-01T00:00:00.000Z" },
@@ -107,7 +100,7 @@ export interface UploadMaterialInput {
 
 export interface TeacherViewModel {
   // ── Identity ──
-  teacher: Teacher;
+  teacher: Teacher | null;
 
   // ── Courses ──
   courses: Course[];
@@ -152,7 +145,21 @@ export interface TeacherViewModel {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useTeacherViewModel(): TeacherViewModel {
-  const [courses, setCourses] = useState<Course[]>(STUB_COURSES);
+  const [teacher, setTeacher] = useState<Teacher | null>(null);
+  useEffect(() => {
+    fetch("/api/teachers/info_teacher", { credentials: "include" })
+      .then(res => (res.ok ? res.json() : null))
+      .then(setTeacher)
+      .catch(() => setTeacher(null));
+  }, []);
+
+  // 🔧 STUB — replace with GET /api/courses once that route exists
+const [courses, setCourses] = useState<Course[]>([]);
+useEffect(() => {
+  fetch("/api/courses", { credentials: "include" })
+    .then(res => (res.ok ? res.json() : []))
+    .then(setCourses);
+}, []);
   const [assignments, setAssignments] = useState<Assignment[]>(STUB_ASSIGNMENTS);
   const [materials, setMaterials] = useState<CourseMaterial[]>([]);
   const [canvases, setCanvases] = useState<Canvas[]>([]);
@@ -168,7 +175,7 @@ export function useTeacherViewModel(): TeacherViewModel {
   const createCourse = useCallback(async (input: CreateCourseInput): Promise<Course> => {
     const newCourse: Course = {
       id: Date.now(),
-      teacher_id: STUB_TEACHER.id,
+      teacher_id: teacher?.id ?? 0,
       name: input.name,
       grade: input.grade,
       join_code: Math.random().toString(36).slice(2, 8).toUpperCase(),
@@ -231,7 +238,7 @@ export function useTeacherViewModel(): TeacherViewModel {
   const uploadMaterial = useCallback(async (input: UploadMaterialInput): Promise<CourseMaterial> => {
     const newMaterial: CourseMaterial = {
       id: Date.now(),
-      teacher_id: STUB_TEACHER.id,
+      teacher_id: teacher?.id ?? 0,
       course_id: input.course_id,
       file_name: input.file.name,
       mime_type: input.file.type || "application/octet-stream",
@@ -312,7 +319,7 @@ export function useTeacherViewModel(): TeacherViewModel {
   const createCanvas = useCallback(async (title: string, courseId: number | null): Promise<Canvas> => {
     const newCanvas: Canvas = {
       id: Date.now(),
-      teacher_id: STUB_TEACHER.id,
+      teacher_id: teacher?.id ?? 0,
       course_id: courseId,
       title,
       state: {},
@@ -342,7 +349,7 @@ export function useTeacherViewModel(): TeacherViewModel {
   // ─────────────────────────────────────────────────────────────────────────
 
   return {
-    teacher: STUB_TEACHER,
+    teacher,
     courses,
     getStudents,
     createCourse,

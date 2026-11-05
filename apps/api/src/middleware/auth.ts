@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { getTeacherById } from "../db/teachers.js";
+import { getSession } from "../db/sessions.js";
 
 // Only lets the request through if it comes from a logged-in teacher who
 // still exists in the database. Relies on req.user being set by the login /
@@ -15,5 +16,14 @@ export async function requireTeacher(req: Request, res: Response, next: NextFunc
   }
 
   req.teacher = teacher;
+  next();
+}
+
+
+export async function loadUser(req: Request, _res: Response, next: NextFunction) {
+  const sessionId = req.cookies?.session;
+  if (sessionId) {
+    req.user = await getSession(sessionId);
+  }
   next();
 }

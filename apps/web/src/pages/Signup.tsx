@@ -36,12 +36,37 @@ export default function Signup() {
       return;
     }
 
-    // 🔧 STUB — replace with POST /api/teachers when the signup route handles sessions.
-    // That route already exists (POST /teachers) but doesn't log you in yet.
-    await new Promise(r => setTimeout(r, 700));
-    navigate("/app");
-    setLoading(false);
+    try {
+        const res = await fetch("/api/teachers/create_teacher", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            first_name: firstName,
+            last_name: lastName,
+            email,
+            password,
+          }),
+        });
+
+        if (!res.ok) {
+          // The api replies with { error: "..." } — show it
+          const body = await res.json().catch(() => null);
+          setError(body?.error ?? "Couldn't create your account. Please try again.");
+          return;
+        }
+
+        // 201 Created — account made
+        navigate("/app");
+      } catch {
+        setError("Can't reach the server. Is the API running?");
+      } finally {
+        setLoading(false);
+      }
   }
+    
+    
+  
 
   return (
     <div className="auth-shell">

@@ -31,7 +31,14 @@ CREATE TABLE IF NOT EXISTS courses (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
-
+CREATE TABLE IF NOT EXISTS sessions (
+  id text PRIMARY KEY,
+  teacher_id int REFERENCES teachers(id) ON DELETE CASCADE,
+  student_id int REFERENCES students(id) ON DELETE CASCADE,
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CHECK ((teacher_id IS NULL) <> (student_id IS NULL))
+);
 
 
 CREATE TABLE IF NOT EXISTS course_material (

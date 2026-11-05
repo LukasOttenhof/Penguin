@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" role="img" aria-labelledby="title">
+  <title id="title">Penguin reading a book with an orange star</title>
+  <path fill="#172D50" d="M22 66C23 33 32 11 50 11s27 22 28 55L50 81Z"/>
+  <path fill="#FFF" d="M31 47c0-15 8-25 19-25s19 10 19 25c0 12-8 18-19 25-11-7-19-13-19-25Z"/>
+  <g fill="#172D50"><circle cx="43" cy="43" r="3.4"/><circle cx="57" cy="43" r="3.4"/></g>
+  <path fill="#F68B1F" d="M45 51h10q2 0 1 2l-5 7q-1 1.5-2 0l-5-7q-1-2 1-2Z"/>
+  <path fill="#FFF" stroke="#172D50" stroke-width="3.6" stroke-linejoin="round" d="M7 67c16-5 29-3 43 5 14-8 27-10 43-5v25c-16-5-29-3-43 5-14-8-27-10-43-5Z"/>
+  <path fill="none" stroke="#172D50" stroke-width="3.2" d="M50 72v24"/>
+  <path fill="none" stroke="#F68B1F" stroke-width="3.2" stroke-linecap="round" d="M17 80q13-4 24 1m18 0q12-5 24-1"/>
+  <g fill="#172D50"><path d="M17 64q7-3 13-1c2 7-4 12-11 10-5-1-7-5-2-9Z"/><path d="M83 64q-7-3-13-1c-2 7 4 12 11 10 5-1 7-5 2-9Z"/></g>
+  <path fill="#F68B1F" d="M83 6c1 0 2 6 3 8s7 2 7 4-6 2-7 4-2 8-3 8-2-6-4-8-7-2-7-4 6-2 7-4 3-8 4-8Z"/>
+</svg>

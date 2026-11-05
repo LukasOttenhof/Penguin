@@ -1,6 +1,5 @@
-# Builds and runs apps/api. apps/web (a Vite frontend) and apps/extension (a VS
-# Code extension) aren't part of this image — web wants static hosting, not a
-# long-running Node process, and the extension isn't a server at all.
+# Builds and runs apps/api. apps/web (a Vite frontend) isn't part of this
+# image — it wants static hosting, not a long-running Node process.
 
 FROM node:22-bookworm AS builder
 WORKDIR /app
@@ -14,7 +13,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json turbo.js
 COPY apps/api/package.json ./apps/api/
 COPY apps/shared/package.json ./apps/shared/
 COPY apps/web/package.json ./apps/web/
-COPY apps/extension/package.json ./apps/extension/
 RUN pnpm install --frozen-lockfile
 
 COPY apps/api ./apps/api
@@ -29,7 +27,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/shared/package.json ./apps/shared/
 COPY apps/web/package.json ./apps/web/
-COPY apps/extension/package.json ./apps/extension/
 RUN pnpm install --frozen-lockfile --prod --filter=api...
 
 COPY --from=builder /app/apps/api/dist ./apps/api/dist

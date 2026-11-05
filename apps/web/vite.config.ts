@@ -10,4 +10,15 @@ const envDir = path.resolve(__dirname, "../..");
 export default defineConfig({
   envDir,
   plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss()],
+  server: {
+    // In dev, forward /api/* to the Express api on port 3000 (dropping the
+    // /api prefix), so the browser talks to one origin and cookies just work.
+    proxy: {
+      "/api": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+        rewrite: p => p.replace(/^\/api/, ""),
+      },
+    },
+  },
 });

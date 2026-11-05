@@ -1,6 +1,7 @@
 import express from "express";
 import { teachersRouter } from "./routes/teachers.js";
 
+
 const app = express();
 const port = process.env.PORT ?? 3000;
 
@@ -21,3 +22,6 @@ app.use("/teachers", teachersRouter);
 app.listen(port, () => {
   console.log(`API server listening on port ${port}`);
 });
+
+
+

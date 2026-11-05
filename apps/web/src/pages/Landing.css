@@ -1,0 +1,88 @@
+/* Landing page. Classes are prefixed lp- so they don't clash with the
+   dashboard's global styles in App.css. Colours match the dashboard. */
+.lp { --navy: #172d50; --muted: #526b89; --ice: #e8f1fc; --ice-light: #f1f6fd; --line: #dbe7f5; --gold: #f6b83e; --gold-dark: #e8a72b;
+  background: #f7faff; color: var(--navy); font-size: 16px; line-height: 1.6; }
+.lp h1, .lp h2, .lp h3 { color: var(--navy); }
+
+/* Nav */
+.lp-nav { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 32px; padding: 16px 48px; background: #ffffffd9; backdrop-filter: blur(8px); border-bottom: 1px solid var(--ice); }
+.lp-brand { display: flex; align-items: center; gap: 9px; font-size: 26px; font-weight: 750; letter-spacing: -1.2px; color: var(--navy); text-decoration: none; }
+.lp-brand img { width: 38px; height: 38px; }
+.lp-brand span { color: var(--gold); margin-left: -8px; }
+.lp-nav-links { display: flex; gap: 28px; margin-left: 16px; }
+.lp-nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 550; }
+.lp-nav-links a:hover { color: var(--navy); }
+.lp-nav-actions { display: flex; gap: 10px; margin-left: auto; }
+
+/* Buttons */
+.lp-btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid transparent; padding: 10px 18px; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; transition: background .15s, box-shadow .15s; }
+.lp-btn-primary { background: var(--gold); color: var(--navy); }
+.lp-btn-primary:hover { background: var(--gold-dark); box-shadow: 0 3px 9px #172d5018; }
+.lp-btn-ghost { background: #fff; border-color: var(--line); color: var(--navy); }
+.lp-btn-ghost:hover { background: var(--ice-light); }
+.lp-btn-lg { padding: 14px 24px; font-size: 15px; }
+
+/* Hero */
+.lp-hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; max-width: 1200px; margin: 0 auto; padding: 72px 48px 56px; }
+.lp-eyebrow { color: var(--muted); font-size: 11px; letter-spacing: 1.8px; font-weight: 700; margin-bottom: 14px; }
+.lp-hero h1 { font-size: clamp(36px, 4.6vw, 58px); font-weight: 750; letter-spacing: -2px; line-height: 1.08; }
+.lp-lead { color: var(--muted); font-size: 18px; margin: 22px 0 32px; max-width: 560px; }
+.lp-lead em { color: var(--navy); font-style: normal; font-weight: 600; text-decoration: underline; text-decoration-color: var(--gold); text-decoration-thickness: 3px; text-underline-offset: 3px; }
+.lp-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.lp-hero-art { min-height: 380px; border-radius: 24px; border: 1px solid var(--line); background: var(--ice) url("../../../../images/penguin-banner-original.svg") center right / cover no-repeat; }
+
+/* Sections */
+.lp-section { max-width: 1200px; margin: 0 auto; padding: 72px 48px; }
+.lp-section h2, .lp-cta h2 { font-size: clamp(28px, 3vw, 38px); font-weight: 700; letter-spacing: -1.2px; line-height: 1.15; margin-bottom: 12px; }
+.lp-section-lead { color: var(--muted); max-width: 640px; }
+.lp h3 { font-size: 18px; font-weight: 650; letter-spacing: -0.3px; margin: 14px 0 8px; }
+.lp p { margin: 0; }
+
+/* How it works */
+.lp-steps { list-style: none; padding: 0; margin: 36px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.lp-steps li { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 28px; }
+.lp-steps p { color: var(--muted); font-size: 15px; }
+.lp-step-num { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #fff3cc; color: #8b610b; font-weight: 700; }
+
+/* Features */
+.lp-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 36px; }
+.lp-card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 28px; }
+.lp-card > img { width: 56px; height: 56px; object-fit: contain; }
+.lp-card p { color: var(--muted); font-size: 15px; }
+
+/* Help levels band */
+.lp-band { max-width: none; background: var(--ice); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.lp-band > * { max-width: 1104px; margin-left: auto; margin-right: auto; }
+.lp-levels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 32px; }
+.lp-level { background: #fff; border-radius: 14px; padding: 22px; box-shadow: inset 0 3px var(--gold); }
+.lp-level p { color: var(--muted); font-size: 14px; margin-top: 6px; }
+
+/* Teachers / students */
+.lp-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.lp-audience h3 { font-size: 24px; margin-top: 0; }
+.lp-audience ul, .lp-safety { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 12px; }
+.lp-audience li, .lp-safety li { position: relative; padding-left: 28px; color: var(--muted); }
+.lp-audience li::before, .lp-safety li::before { content: "✓"; position: absolute; left: 0; top: 0; width: 20px; height: 20px; border-radius: 50%; background: #fff3cc; color: #8b610b; font-size: 12px; font-weight: 700; display: grid; place-items: center; margin-top: 2px; }
+
+/* Safety */
+.lp-safety { grid-template-columns: 1fr 1fr; gap: 16px 32px; margin-top: 28px; }
+
+/* Final CTA + footer */
+.lp-cta { margin: 24px 48px 72px; padding: 64px 32px; text-align: center; border-radius: 24px; background: var(--navy); }
+.lp-cta h2 { color: #fff; }
+.lp-cta p { color: #c9d8ec; margin-bottom: 28px; }
+.lp-footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 24px 48px; border-top: 1px solid var(--ice); color: var(--muted); font-size: 13px; }
+
+/* Smaller screens */
+@media (max-width: 960px) {
+  .lp-hero, .lp-split { grid-template-columns: 1fr; }
+  .lp-hero-art { min-height: 260px; }
+  .lp-steps, .lp-features { grid-template-columns: 1fr 1fr; }
+  .lp-levels { grid-template-columns: 1fr 1fr; }
+  .lp-nav-links { display: none; }
+}
+@media (max-width: 640px) {
+  .lp-nav, .lp-hero, .lp-section, .lp-footer { padding-left: 20px; padding-right: 20px; }
+  .lp-cta { margin-left: 20px; margin-right: 20px; }
+  .lp-steps, .lp-features, .lp-levels, .lp-safety { grid-template-columns: 1fr; }
+}

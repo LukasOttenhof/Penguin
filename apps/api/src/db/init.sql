@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS vector;
+
 CREATE TABLE IF NOT EXISTS teachers (
   id SERIAL PRIMARY KEY,
   first_name varchar(100) NOT NULL,

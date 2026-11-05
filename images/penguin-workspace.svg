@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" role="img" aria-label="Student workspace penguin using a laptop">
+  <path fill="#172D50" d="M22 75C23 36 31 10 50 10s27 26 28 65Z"/>
+  <path fill="#FFF" d="M31 47c0-16 7-25 19-25s19 9 19 25c0 12-8 19-19 25-11-6-19-13-19-25Z"/>
+  <g fill="#172D50"><circle cx="43" cy="42" r="3.2"/><circle cx="57" cy="42" r="3.2"/></g>
+  <path fill="#F68B1F" d="m44 51 6 9 6-9Z"/>
+  <rect x="15" y="62" width="70" height="29" rx="5" fill="#EAF2FC" stroke="#172D50" stroke-width="3.6"/>
+  <path d="M8 91h84l-5 5H13Z" fill="#172D50" stroke="#172D50" stroke-width="3" stroke-linejoin="round"/>
+  <path fill="#F68B1F" d="m50 69 3 6 6 3-6 3-3 6-3-6-6-3 6-3Z"/>
+  <path fill="#172D50" d="M13 63q8-6 15-1c2 6-6 11-12 8-3-1-5-4-3-7Zm74 0q-8-6-15-1c-2 6 6 11 12 8 3-1 5-4 3-7Z"/>
+</svg>

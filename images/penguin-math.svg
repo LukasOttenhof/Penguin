@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" role="img" aria-label="Math penguin with arithmetic symbols">
+  <path fill="#172D50" d="M22 77C23 38 31 10 50 10s27 28 28 67Z"/>
+  <path fill="#FFF" d="M31 47c0-16 7-25 19-25s19 9 19 25c0 12-8 19-19 25-11-6-19-13-19-25Z"/>
+  <g fill="none" stroke="#172D50" stroke-width="2.8"><circle cx="41" cy="42" r="8"/><circle cx="59" cy="42" r="8"/><path d="M49 41h2"/></g>
+  <g fill="#172D50"><circle cx="41" cy="42" r="2.3"/><circle cx="59" cy="42" r="2.3"/></g>
+  <path fill="#F68B1F" d="m44 53 6 9 6-9Z"/>
+  <rect x="13" y="65" width="74" height="30" rx="5" fill="#FFF" stroke="#172D50" stroke-width="3.6"/>
+  <g fill="none" stroke="#F68B1F" stroke-width="3.5" stroke-linecap="round"><path d="M31 73v14m-7-7h14m11-5 10 10m0-10L49 85m19-9h9m-9 8h9"/></g>
+  <path fill="#172D50" d="M11 65q8-6 15-1c2 6-6 11-12 8-3-1-5-4-3-7Zm78 0q-8-6-15-1c-2 6 6 11 12 8 3-1 5-4 3-7Z"/>
+</svg>

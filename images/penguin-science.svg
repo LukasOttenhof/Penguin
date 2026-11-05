@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" role="img" aria-label="Science penguin with goggles and a laboratory flask">
+  <path fill="#172D50" d="M19 78C20 39 27 10 46 10s27 29 28 68c-12 16-43 16-55 0Z"/>
+  <path fill="#FFF" d="M27 47c0-16 7-25 19-25s19 9 19 25c0 12-8 19-19 25-11-6-19-13-19-25Z"/>
+  <rect x="25" y="34" width="42" height="19" rx="8" fill="#EAF2FC" stroke="#172D50" stroke-width="3"/>
+  <g fill="#172D50"><circle cx="38" cy="43" r="3"/><circle cx="54" cy="43" r="3"/></g>
+  <path d="M46 35v17" stroke="#172D50" stroke-width="2"/>
+  <path fill="#F68B1F" d="m40 56 6 9 6-9Z"/>
+  <path fill="#FFF" d="M31 68c-4 7-5 15-2 19 5 6 19 7 28 0 3-4 0-12-3-19-7 5-16 5-23 0Z"/>
+  <path d="M68 51v15L57 86q-4 8 6 8h26q10 0 6-8L84 66V51Z" fill="#FFF" stroke="#172D50" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="m66 76-7 12q-1 3 4 3h26q5 0 4-3l-7-12Z" fill="#F68B1F"/>
+  <path d="M66 51h20" stroke="#172D50" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="76" cy="80" r="2" fill="#FFF"/><circle cx="83" cy="86" r="2.3" fill="#FFF"/>
+  <circle cx="76" cy="40" r="3" fill="#F68B1F"/><circle cx="86" cy="29" r="2" fill="#F68B1F"/>
+  <path fill="#172D50" d="M61 65c4-5 11-3 13 1 2 5-7 10-12 7-3-2-3-5-1-8Z"/>
+</svg>

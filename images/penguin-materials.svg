@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" role="img" aria-label="Course materials penguin with a stack of books">
+  <path fill="#172D50" d="M22 73C23 35 31 9 50 9s27 26 28 64Z"/>
+  <path fill="#FFF" d="M31 45c0-15 7-24 19-24s19 9 19 24c0 12-8 19-19 25-11-6-19-13-19-25Z"/>
+  <g fill="#172D50"><circle cx="43" cy="41" r="3"/><circle cx="57" cy="41" r="3"/></g>
+  <path fill="#F68B1F" d="m44 50 6 9 6-9Z"/>
+  <rect x="12" y="78" width="76" height="17" rx="5" fill="#172D50"/>
+  <path d="M23 84h57v5H23" fill="#FFF"/>
+  <rect x="18" y="65" width="68" height="17" rx="5" fill="#FFF" stroke="#172D50" stroke-width="3"/>
+  <path d="M29 71h48" stroke="#DCE8F7" stroke-width="3" stroke-linecap="round"/>
+  <rect x="16" y="54" width="66" height="16" rx="5" fill="#F68B1F"/>
+  <path d="M27 60h47v4H27" fill="#FFF"/>
+  <path fill="#172D50" d="M13 56c2-6 9-6 14-3 4 5-4 12-10 10-4-1-5-4-4-7Zm74 0c-2-6-9-6-14-3-4 5 4 12 10 10 4-1 5-4 4-7Z"/>
+</svg>

@@ -1,0 +1,52 @@
+.classroom-list-heading { margin-bottom: 23px; }
+.classroom-list-heading h2, .classroom-section-header h2 { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 650; }
+.classroom-list-heading p, .classroom-section-header p { color: #526b89; font-size: 12px; line-height: 1.7; margin-top: 7px; }
+.student-count { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 8px; border-radius: 9px; background: #e8f1fc; color: #365b88; font-size: 12px; font-weight: 600; }
+.classroom-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 285px), 1fr)); gap: 22px; }
+.assigned-classroom { border: 1px solid #dbe7f5; border-radius: 20px; background: linear-gradient(145deg, #fff, #eaf3ff); padding: 28px; }
+.assigned-classroom.gold { background: linear-gradient(145deg, #fff, #fff7df); border-color: #f4e6bd; }
+.assigned-classroom-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 25px; }
+.classroom-badge { display: grid; place-items: center; width: 70px; height: 70px; background: #fff; border: 1px solid #e8f1fc; border-radius: 20px; flex-shrink: 0; }
+.assigned-classroom h3 { font-size: 22px; font-weight: 650; letter-spacing: -.5px; }
+.assigned-classroom > p { color: #526b89; font-size: 13px; margin-top: 8px; }
+.assigned-classroom-count { color: #526b89; font-size: 13px; padding: 24px 0; margin-top: 12px; }
+.assigned-classroom-count strong { font-size: 24px; color: #172d50; margin-right: 4px; }
+.assigned-classroom .button { width: 100%; justify-content: space-between; }
+.classroom-admin-note { margin: 24px 0 0; color: #526b89; font-size: 12px; line-height: 1.8; }
+.classroom-back { margin-bottom: 20px; gap: 8px; font-size: 12px; }
+.classroom-summary { display: flex; align-items: center; gap: 22px; padding: 26px; border-radius: 20px; background: #e8f1fc; border: 1px solid #dbe7f5; }
+.classroom-summary .classroom-badge { width: 84px; height: 84px; }
+.classroom-summary h2 { font-size: 24px; font-weight: 650; letter-spacing: -.5px; margin-top: 9px; }
+.classroom-summary p { font-size: 13px; color: #526b89; margin-top: 6px; }
+.classroom-total { margin-left: auto; display: grid; gap: 4px; text-align: center; padding: 8px 15px; }
+.classroom-total strong { font-size: 36px; font-weight: 650; }
+.classroom-total span { color: #526b89; font-size: 12px; }
+.classroom-section-label { display: inline-block; padding: 23px 10px 13px; margin-bottom: 18px; color: #172d50; border-bottom: 3px solid #f6b83e; font-size: 13px; font-weight: 650; }
+.classroom-section-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 25px; }
+.roster-search { width: min(100%, 310px); flex-shrink: 0; }
+.roster-table-wrap { overflow-x: auto; }
+.roster-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+.roster-table th { padding: 13px 18px; background: #f1f6fd; color: #526b89; font-size: 11px; font-weight: 650; }
+.roster-table td { padding: 15px 18px; border-bottom: 1px solid #e8f1fc; }
+.roster-table tbody tr:hover { background: #f7faff; }
+.student-name { display: flex; align-items: center; gap: 13px; font-weight: 600; white-space: nowrap; }
+.student-avatar { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: #e8f1fc; color: #365b88; font-size: 11px; flex-shrink: 0; }
+.roster-table tr:nth-child(even) .student-avatar { background: #fff3cc; color: #8b610b; }
+.student-username { color: #526b89; overflow-wrap: anywhere; }
+.roster-results { color: #526b89; font-size: 11px; margin-top: 20px; }
+.classroom-empty { display: grid; justify-items: center; gap: 15px; padding: 60px 20px; text-align: center; }
+.classroom-empty h2 { font-size: 23px; font-weight: 650; }
+.classroom-empty p { max-width: 430px; color: #526b89; font-size: 13px; line-height: 1.8; }
+@media (max-width: 650px) {
+  .classroom-summary { padding: 20px; gap: 14px; flex-wrap: wrap; }
+  .classroom-summary h2 { font-size: 20px; }
+  .classroom-summary .classroom-badge { width: 66px; height: 66px; }
+  .classroom-summary .classroom-badge img { width: 48px; height: 48px; }
+  .classroom-total { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 0 0; border-top: 1px solid #cbdcf0; }
+  .classroom-total strong { font-size: 25px; }
+  .classroom-section-header { flex-direction: column; align-items: stretch; }
+  .roster-search { width: 100%; }
+  .roster-table th, .roster-table td { padding: 12px 8px; }
+  .student-name { gap: 8px; }
+  .assigned-classroom { padding: 23px; }
+}

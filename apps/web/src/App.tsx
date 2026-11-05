@@ -1,22 +1,22 @@
+import { penguinLogo, penguinClassrooms, penguinAssignments, penguinMaterials, penguinWorkspace, penguinScience } from "./brand-assets";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import "./App.css";
+import Classrooms from "./features/classrooms/Classrooms";
+import { assignedClassrooms } from "./features/classrooms/classroom-data";
 
-type Page = "Overview" | "Classes" | "Assignments" | "Course materials" | "Student workspace";
+type Page = "Overview" | "Classrooms" | "Assignments" | "Course materials" | "Student workspace";
 type HelpLevel = "Hints only" | "Explain concepts" | "Open help" | "Assistant off";
-type Classroom = { id: string; name: string; unit: string; code: string };
+
 type Assignment = { id: string; title: string; classId: string; due: string; help: HelpLevel; instructions: string };
 type Material = { id: string; name: string; classId: string; size: string };
 type Workspace = { text: string; submitted: boolean };
-const initialClasses: Classroom[] = [
-  { id: "cells", name: "Grade 8 · Science", unit: "Cells & systems", code: "CELL8A" },
-  { id: "electricity", name: "Grade 9 · Science", unit: "Electricity & circuits", code: "VOLT9B" },
-];
+
 const initialAssignments: Assignment[] = [
   { id: "cell-lab", title: "A closer look at cells", classId: "cells", due: "", help: "Hints only", instructions: "Compare plant and animal cells. Write a hypothesis, describe your observations, and explain how each structure supports the cell. Use evidence from your class material." },
   { id: "circuit-lab", title: "Build a better circuit", classId: "electricity", due: "", help: "Explain concepts", instructions: "Investigate how adding a bulb changes a series circuit. Record your prediction, procedure, observations, and conclusion." },
 ];
-const pages: Page[] = ["Overview", "Classes", "Assignments", "Course materials", "Student workspace"];
+const pages: Page[] = ["Overview", "Classrooms", "Assignments", "Course materials", "Student workspace"];
 const helpLevels: HelpLevel[] = ["Hints only", "Explain concepts", "Open help", "Assistant off"];
 
 function useStoredState<T,>(key: string, fallback: T) {
@@ -34,12 +34,15 @@ function useStoredState<T,>(key: string, fallback: T) {
 }
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
+  const mascots: Record<string, string> = {
+    Overview: penguinLogo,
+    Classrooms: penguinClassrooms,
+    Assignments: penguinAssignments,
+    "Course materials": penguinMaterials,
+    "Student workspace": penguinWorkspace,
+  };
+  if (mascots[name]) return <img className="penguin-icon" src={mascots[name]} width={size} height={size} alt="" aria-hidden="true" />;
   const paths: Record<string, ReactNode> = {
-    Overview: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>,
-    Classes: <><path d="M3 5h7l2 2h9v13H3z" /><path d="M8 12h8M8 16h5" /></>,
-    Assignments: <><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 3h6v4H9zM9 12h6M9 16h4" /></>,
-    "Course materials": <path d="M12 5v16M12 5C8 2 3 4 3 4v15s5-2 9 2c4-4 9-2 9-2V4s-5-2-9 1z" />,
-    "Student workspace": <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M7 4v16M17 4v16M10 9h4M10 13h4" /></>,
     plus: <path d="M12 5v14M5 12h14" />,
     arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
     spark: <><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z" /><path d="m20 2 .5 1.5L22 4l-1.5.5L20 6l-.5-1.5L18 4l1.5-.5z" /></>,
@@ -48,7 +51,7 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
     close: <path d="m6 6 12 12M6 18 18 6" />,
     upload: <path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6" />,
   };
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths.Assignments}</svg>;
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths.spark}</svg>;
 }
 
 function ModalShell({ children, onClose }: { children: ReactNode; onClose: () => void }) {
@@ -62,10 +65,11 @@ function ModalShell({ children, onClose }: { children: ReactNode; onClose: () =>
 }
 
 function App() {
-  const [page, setPage] = useState<Page>("Overview");
+  const [page, setPage] = useState<Page>("Classrooms");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [modal, setModal] = useState<"class" | "assignment" | null>(null);
-  const [classes, setClasses, classError] = useStoredState("penguin.classes.v1", initialClasses);
+  const [modal, setModal] = useState<"assignment" | null>(null);
+  const classes = assignedClassrooms;
+  const [activeClassroomId, setActiveClassroomId] = useState<string | null>(null);
   const [assignments, setAssignments, assignmentError] = useStoredState("penguin.assignments.v1", initialAssignments);
   const [materials, setMaterials, materialError] = useStoredState<Material[]>("penguin.materials.v1", []);
   const [workspaces, setWorkspaces, workspaceError] = useStoredState<Record<string, Workspace>>("penguin.workspaces.v1", {});
@@ -78,7 +82,8 @@ function App() {
   const visibleAssignments = assignments.filter(item => (selectedClass === "all" || item.classId === selectedClass) && item.title.toLowerCase().includes(search.toLowerCase()));
   const getClass = (id: string) => classes.find(item => item.id === id);
 
-  function navigate(next: Page) { setPage(next); setMenuOpen(false); setSearch(""); setNotice(""); }
+  function navigate(next: Page) { setPage(next); setMenuOpen(false); setSearch(""); setNotice(""); if (next === "Classrooms") setActiveClassroomId(null); }
+  function openClassroom(id: string) { navigate("Classrooms"); setActiveClassroomId(id); }
   function openWorkspace(id: string) { setActiveAssignment(id); navigate("Student workspace"); }
   function saveForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,13 +91,9 @@ function App() {
     const title = String(data.get("title") ?? "").trim();
     if (!title) return;
     const id = crypto.randomUUID();
-    if (modal === "class") {
-      setClasses([...classes, { id, name: title, unit: String(data.get("unit")).trim(), code: id.replaceAll("-", "").slice(0, 6).toUpperCase() }]);
-      navigate("Classes");
-    } else {
-      setAssignments([...assignments, { id, title, classId: String(data.get("classId")), due: String(data.get("due")), help: String(data.get("help")) as HelpLevel, instructions: String(data.get("instructions")).trim() }]);
-      setSelectedClass("all"); navigate("Assignments");
-    }
+    if (!classes.some(item => item.id === String(data.get("classId")))) return;
+    setAssignments([...assignments, { id, title, classId: String(data.get("classId")), due: String(data.get("due")), help: String(data.get("help")) as HelpLevel, instructions: String(data.get("instructions")).trim() }]);
+    setSelectedClass("all"); navigate("Assignments");
     setModal(null);
   }
   function updateWorkspace(next: Workspace) {
@@ -108,27 +109,27 @@ function App() {
 
   return <div className="app-shell">
     <aside className={`sidebar ${menuOpen ? "is-open" : ""}`} aria-label="Main navigation">
-      <a className="brand" href="#" onClick={event => { event.preventDefault(); navigate("Overview"); }}><img className="brand-logo" src={`${import.meta.env.BASE_URL}penguin-logo.svg`} width="100" height="100" alt="" />penguin<span className="brand-dot">.</span></a>
+      <a className="brand" href="#" onClick={event => { event.preventDefault(); navigate("Overview"); }}><img className="brand-logo" src={penguinLogo} width="100" height="100" alt="" />penguin<span className="brand-dot">.</span></a>
       <div className="workspace-label">YOUR WORKSPACE <span>DEMO</span></div>
-      <nav>{pages.map(item => <button key={item} className={`nav-item ${page === item ? "active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={() => navigate(item)}><Icon name={item} />{item}{item === "Classes" && <span className="nav-count">{classes.length}</span>}</button>)}</nav>
+      <nav>{pages.map(item => <button key={item} className={`nav-item ${page === item ? "active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={() => navigate(item)}><Icon name={item} size={30} />{item}{item === "Classrooms" && <span className="nav-count">{classes.length}</span>}</button>)}</nav>
       <div className="sidebar-bottom"><div className="sidebar-note"><Icon name="spark" /><strong>Every learner<br />belongs in the huddle.</strong><p>A little support. A big world to explore together.</p></div><div className="profile"><span className="avatar">AT</span><div><strong>Alex Taylor</strong><small>Teacher · Demo account</small></div></div></div>
     </aside>
     <div className="main-shell">
       <header className="topbar"><div className="breadcrumb"><button className="icon-button mobile-menu" aria-label="Toggle navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}><Icon name="menu" /></button><span>Workspace</span><span className="slash">/</span><strong>{page}</strong></div><span className="demo-label"><span /> Synthetic classroom demo</span></header>
       <main id="main-content">
-        <div className="page-heading"><div><div className="eyebrow">WELCOME TO YOUR COLONY</div><h1>{page === "Overview" ? "Big discoveries start with a little curiosity." : page}</h1><p>{page === "Overview" ? "Gather your learners. Share ideas. Explore science together." : page === "Classes" ? "Bring your learners together. Make space for discovery." : page === "Assignments" ? "Give every investigation a clear starting point." : page === "Course materials" ? "Keep your classroom knowledge in one place." : "A place to think, investigate, and make connections."}</p></div><button className="button primary" onClick={() => setModal(page === "Classes" ? "class" : "assignment")}><Icon name="plus" size={18} />{page === "Classes" ? "Create class" : "New assignment"}</button></div>
-        <div className="demo-banner"><Icon name="check" size={16} /><span>Explore with sample data. Changes save in this browser; accounts, uploads, and AI are not connected yet.</span></div>
-        {(classError || assignmentError || materialError || workspaceError) && <p role="alert" className="error-banner">Browser storage is unavailable or full. Your latest changes are only saved for this session.</p>}
+        <div className="page-heading"><div><div className="eyebrow">WELCOME TO YOUR COLONY</div><h1>{page === "Overview" ? "Big discoveries start with a little curiosity." : page === "Classrooms" && activeClassroomId ? classes.find(item => item.id === activeClassroomId)?.name ?? "Classrooms" : page}</h1><p>{page === "Overview" ? "Gather your learners. Share ideas. Explore science together." : page === "Classrooms" ? "Your assigned classrooms and student rosters, all in one place." : page === "Assignments" ? "Give every investigation a clear starting point." : page === "Course materials" ? "Keep your classroom knowledge in one place." : "A place to think, investigate, and make connections."}</p></div>{page !== "Classrooms" && <button className="button primary" disabled={!classes.length} onClick={() => setModal("assignment")}><Icon name="plus" size={18} />New assignment</button>}</div>
+        <div className="demo-banner"><Icon name="check" size={16} /><span>Sample classrooms and students are shown for this teacher demo. Live administrator assignments are not connected yet.</span></div>
+        {(assignmentError || materialError || workspaceError) && <p role="alert" className="error-banner">Browser storage is unavailable or full. Your latest changes are only saved for this session.</p>}
         {notice && <div role="status" className="notice">{notice}<button className="icon-button" aria-label="Dismiss notification" onClick={() => setNotice("")}><Icon name="close" size={16} /></button></div>}
 
         {page === "Overview" && <>
-          <section className="welcome-card"><div className="welcome-copy"><span className="pill light">SMALL STEPS. BIG DISCOVERIES.</span><h2>Learning is better<br /><em>in a huddle.</em></h2><p>A curious penguin. A classroom of explorers.<br />Bring your colony together and explore something new.</p><button className="button dark" onClick={() => setModal("class")}>Create a class <Icon name="arrow" size={18} /></button></div><div className="penguin-scene" aria-hidden="true" /></section>
-          <section className="stats" aria-label="Workspace totals">{[{ label: "Your classes", value: classes.length, icon: "Classes", caption: "Spaces to learn together" }, { label: "Assignments", value: assignments.length, icon: "Assignments", caption: "Questions worth exploring" }, { label: "Course materials", value: materials.length, icon: "Course materials", caption: "Resources for discovery" }].map(stat => <button className="stat-card" key={stat.label} onClick={() => navigate(stat.icon as Page)}><div><span>{stat.label}</span><strong>{stat.value.toString().padStart(2, "0")}</strong><small>{stat.caption}</small></div><span className="stat-icon"><Icon name={stat.icon} /></span></button>)}</section>
-          <div className="overview-grid"><section className="panel"><div className="section-heading"><div><h2>Your classes</h2><p>Your learning colonies. Ready to explore.</p></div><button className="text-button" onClick={() => navigate("Classes")}>View all <Icon name="arrow" size={16} /></button></div><div className="class-grid">{classes.slice(0, 2).map((item, index) => <button className={`class-card tone-${index % 2}`} key={item.id} onClick={() => { setSelectedClass(item.id); navigate("Assignments"); }}><div className="class-card-top"><span className="class-mark">{index % 2 ? "ϟ" : "✳"}</span><span className="pill">{assignments.filter(assignment => assignment.classId === item.id).length} assignments</span></div><h3>{item.name}</h3><p>{item.unit}</p><div className="class-card-footer">Explore class <Icon name="arrow" size={18} /></div></button>)}</div></section><section className="idea-card"><img className="idea-mascot" src={`${import.meta.env.BASE_URL}penguin-logo.svg`} width="64" height="64" alt="" /><div className="eyebrow">A LITTLE HELP FROM PENGUIN</div><h2>A helpful nudge.<br />A new discovery.</h2><p>Choose how much help students get, from gentle hints to deeper explanations.</p><button className="text-button" onClick={() => setModal("assignment")}>Set up an assignment <Icon name="arrow" size={17} /></button></section></div>
+          <section className="welcome-card"><div className="welcome-copy"><span className="pill light">SMALL STEPS. BIG DISCOVERIES.</span><h2>Learning is better<br /><em>in a huddle.</em></h2><p>A curious penguin. A classroom of explorers.<br />Bring your colony together and explore something new.</p><button className="button dark" onClick={() => navigate("Classrooms")}>View classrooms <Icon name="arrow" size={18} /></button></div><div className="penguin-scene" aria-hidden="true" /></section>
+          <section className="stats" aria-label="Workspace totals">{[{ label: "Your classrooms", value: classes.length, icon: "Classrooms", caption: "Spaces to learn together" }, { label: "Assignments", value: assignments.length, icon: "Assignments", caption: "Questions worth exploring" }, { label: "Course materials", value: materials.length, icon: "Course materials", caption: "Resources for discovery" }].map(stat => <button className="stat-card" key={stat.label} onClick={() => navigate(stat.icon as Page)}><div><span>{stat.label}</span><strong>{stat.value.toString().padStart(2, "0")}</strong><small>{stat.caption}</small></div><span className="stat-icon"><Icon name={stat.icon} /></span></button>)}</section>
+          <div className="overview-grid"><section className="panel"><div className="section-heading"><div><h2>Your classrooms</h2><p>Your learning colonies. Ready to explore.</p></div><button className="text-button" onClick={() => navigate("Classrooms")}>View all <Icon name="arrow" size={16} /></button></div><div className="class-grid">{classes.slice(0, 2).map((item, index) => <button className={`class-card tone-${index % 2}`} key={item.id} onClick={() => openClassroom(item.id)}><div className="class-card-top"><span className="class-mark"><img src={penguinScience} width="32" height="32" alt="" /></span><span className="pill">{item.students.length} students</span></div><h3>{item.name}</h3><p>{item.unit}</p><div className="class-card-footer">Open classroom <Icon name="arrow" size={18} /></div></button>)}</div></section><section className="idea-card"><img className="idea-mascot" src={penguinLogo} width="64" height="64" alt="" /><div className="eyebrow">A LITTLE HELP FROM PENGUIN</div><h2>A helpful nudge.<br />A new discovery.</h2><p>Choose how much help students get, from gentle hints to deeper explanations.</p><button className="text-button" onClick={() => setModal("assignment")}>Set up an assignment <Icon name="arrow" size={17} /></button></section></div>
           <section className="panel"><div className="section-heading"><div><h2>Ready for exploration</h2><p>Pick up an investigation in the student demo.</p></div><button className="text-button" onClick={() => { setSelectedClass("all"); navigate("Assignments"); }}>All assignments <Icon name="arrow" size={16} /></button></div>{assignmentList(assignments.slice(0, 3))}</section>
         </>}
 
-        {page === "Classes" && <section className="class-grid full-grid">{classes.map((item, index) => <article className={`class-card tone-${index % 2}`} key={item.id}><div className="class-card-top"><span className="class-mark">{index % 2 ? "ϟ" : "✳"}</span><span className="pill">Demo class</span></div><h2>{item.name}</h2><p>{item.unit}</p><div className="join-code">Join code <strong>{item.code}</strong></div><p className="small-copy">Demo code only. Student enrollment is not connected.</p><button className="button secondary" onClick={() => { setSelectedClass(item.id); navigate("Assignments"); }}>View assignments <Icon name="arrow" size={17} /></button></article>)}</section>}
+        {page === "Classrooms" && <Classrooms classrooms={classes} activeClassroomId={activeClassroomId} onOpenClassroom={openClassroom} onBack={() => setActiveClassroomId(null)} />}
 
         {page === "Assignments" && <section className="panel"><div className="filters"><label className="search-label">Search assignments<input placeholder="Search by title…" value={search} onChange={event => setSearch(event.target.value)} /></label><label>Class<select value={selectedClass} onChange={event => setSelectedClass(event.target.value)}><option value="all">All classes</option>{classes.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><span className="result-count">{visibleAssignments.length} assignments</span></div>{assignmentList(visibleAssignments)}</section>}
 
@@ -138,7 +139,7 @@ function App() {
         <footer className="page-footer"><span>penguin<span className="brand-dot">.</span> <span>Curious minds. One happy colony.</span></span><span>Made for curious minds · Grades 8–9</span></footer>
       </main>
     </div>
-    {modal && <ModalShell onClose={() => setModal(null)}><section className="modal"><div className="section-heading"><div><div className="eyebrow">START SOMETHING GOOD</div><h2 id="modal-title">{modal === "class" ? "Create a class" : "Create an assignment"}</h2></div><button className="icon-button" aria-label="Close dialog" onClick={() => setModal(null)}><Icon name="close" /></button></div><form onSubmit={saveForm}><label>{modal === "class" ? "Class name" : "Assignment title"}<input name="title" autoFocus required maxLength={100} placeholder={modal === "class" ? "e.g. Grade 8 · Science B" : "e.g. Exploring plant cells"} /></label>{modal === "class" ? <label>Unit<input name="unit" required maxLength={100} placeholder="e.g. Cells & systems" /></label> : <><label>Class<select name="classId" defaultValue={selectedClass === "all" ? classes[0]?.id : selectedClass}>{classes.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Instructions<textarea name="instructions" required rows={4} placeholder="What should students investigate?" /></label><div className="form-grid"><label>Due date (optional)<input type="date" name="due" /></label><label>AI help level<select name="help">{helpLevels.map(level => <option key={level}>{level}</option>)}</select></label></div></>}<p className="small-copy">Saved as a local demo. Publishing, enrollment, and AI settings require backend integration.</p><div className="modal-actions"><button type="button" className="button secondary" onClick={() => setModal(null)}>Cancel</button><button className="button primary" type="submit">{modal === "class" ? "Create class" : "Create assignment"}<Icon name="arrow" size={17} /></button></div></form></section></ModalShell>}
+    {modal && <ModalShell onClose={() => setModal(null)}><section className="modal"><div className="section-heading"><div><div className="eyebrow">START SOMETHING GOOD</div><h2 id="modal-title">Create an assignment</h2></div><button className="icon-button" aria-label="Close dialog" onClick={() => setModal(null)}><Icon name="close" /></button></div><form onSubmit={saveForm}><label>Assignment title<input name="title" autoFocus required maxLength={100} placeholder="e.g. Exploring plant cells" /></label><label>Classroom<select name="classId" required defaultValue={selectedClass === "all" ? classes[0]?.id : selectedClass}>{classes.map(item => <option key={item.id} value={item.id}>{item.name} · Grade {item.grade}</option>)}</select></label><label>Instructions<textarea name="instructions" required rows={4} placeholder="What should students investigate?" /></label><div className="form-grid"><label>Due date (optional)<input type="date" name="due" /></label><label>AI help level<select name="help">{helpLevels.map(level => <option key={level}>{level}</option>)}</select></label></div><p className="small-copy">Saved as a local demo. Publishing and AI settings require backend integration.</p><div className="modal-actions"><button type="button" className="button secondary" onClick={() => setModal(null)}>Cancel</button><button className="button primary" type="submit" disabled={!classes.length}>Create assignment<Icon name="arrow" size={17} /></button></div></form></section></ModalShell>}
   </div>;
 }
 

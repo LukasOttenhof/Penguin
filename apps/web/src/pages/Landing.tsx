@@ -178,15 +178,6 @@ export default function Landing() {
         </div>
       </section>
 
-      <section id="safety" className="lp-section">
-        <p className="lp-eyebrow">SAFETY AND PRIVACY</p>
-        <h2>Designed for students aged 13–15</h2>
-        <ul className="lp-safety">
-          {safety.map(item => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
 
       <section className="lp-cta">
         <h2>Ready to bring Penguin to your classroom?</h2>

@@ -32,3 +32,14 @@ export async function getTeacherById(id: number): Promise<Teacher | undefined> {
   );
   return result.rows[0]; // undefined if no teacher has that id
 }
+
+
+
+
+export async function findTeacherByEmail(email: string) {
+  const result = await pool.query(
+    "SELECT id, first_name, last_name, email, password_hash FROM teachers WHERE email = $1",
+    [email.toLowerCase()],
+  );
+  return result.rows[0];
+}

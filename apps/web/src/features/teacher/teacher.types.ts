@@ -10,6 +10,8 @@ export interface Teacher {
   first_name: string;
   last_name: string;
   email: string;
+  /** true = this account has admin-level access to the whole platform. */
+  is_admin: boolean;
   created_at: string; // ISO-8601
 }
 

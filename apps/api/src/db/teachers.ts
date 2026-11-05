@@ -6,6 +6,7 @@ export interface Teacher {
   first_name: string;
   last_name: string;
   email: string;
+  is_admin: boolean;
   created_at: Date;
 }
 
@@ -18,7 +19,7 @@ export async function createTeacher(
   const result = await pool.query<Teacher>(
     `INSERT INTO teachers (first_name, last_name, email, password_hash)
      VALUES ($1, $2, $3, $4)
-     RETURNING id, first_name, last_name, email, created_at`,
+     RETURNING id, first_name, last_name, email, is_admin, created_at`,
     [firstName, lastName, email, passwordHash],
   );
   return result.rows[0];
@@ -26,7 +27,7 @@ export async function createTeacher(
 
 export async function getTeacherById(id: number): Promise<Teacher | undefined> {
   const result = await pool.query<Teacher>(
-    "SELECT id, first_name, last_name, email, created_at FROM teachers WHERE id = $1",
+    "SELECT id, first_name, last_name, email, is_admin, created_at FROM teachers WHERE id = $1",
     [id],
   );
   return result.rows[0]; // undefined if no teacher has that id

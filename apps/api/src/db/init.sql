@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS teachers (
   last_name varchar(100) NOT NULL,
   email varchar(255) NOT NULL UNIQUE,
   password_hash text NOT NULL,
+
+  is_admin boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 

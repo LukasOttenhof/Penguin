@@ -28,6 +28,7 @@ const STUB_TEACHER: Teacher = {
   first_name: "Alex",
   last_name: "Taylor",
   email: "alex.taylor@demo.school",
+  is_admin: false,
   created_at: "2026-09-01T00:00:00.000Z",
 };
 

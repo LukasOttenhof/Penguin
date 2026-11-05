@@ -1,0 +1,65 @@
+{
+  "name": "aida-instrumentation",
+  "displayName": "Aida Instrumentation",
+  "description": "Captures editor, terminal, file, and debug activity plus Claude Code session transcripts for the Aida research study.",
+  "version": "0.0.1",
+  "private": true,
+  "publisher": "aida",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LukasOttenhof/Aida-starter-template.git",
+    "directory": "apps/extension"
+  },
+  "type": "module",
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension.cjs",
+  "contributes": {
+    "commands": [
+      { "command": "aida.setParticipantId", "title": "Aida: Set Participant ID" },
+      { "command": "aida.setApiKey", "title": "Aida: Set Server API Key" },
+      { "command": "aida.flushNow", "title": "Aida: Flush Queued Events Now" },
+      { "command": "aida.showStatus", "title": "Aida: Show Instrumentation Status" },
+      { "command": "aida.markFinished", "title": "Aida: Mark Session Finished" }
+    ],
+    "configuration": {
+      "title": "Aida Instrumentation",
+      "properties": {
+        "aida.serverUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Base URL of the Aida logging server (e.g. https://logs.example.com)."
+        },
+        "aida.participantId": {
+          "type": "string",
+          "default": "",
+          "description": "Participant identifier tagged on every captured event."
+        },
+        "aida.userGroup": {
+          "type": "string",
+          "default": "",
+          "description": "Study group label for this participant (e.g. 1, 2, 3, or 4)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.cjs --external:vscode --format=cjs --platform=node --target=node18 --sourcemap",
+    "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.cjs --external:vscode --format=cjs --platform=node --target=node18 --sourcemap --watch",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.13.2",
+    "@types/vscode": "^1.93.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^10.6.0",
+    "globals": "^17.7.0",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.62.0"
+  }
+}

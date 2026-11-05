@@ -1,0 +1,16 @@
+{
+  "name": "Aida Starter Template",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22-bookworm",
+  "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "postStartCommand": "bash .devcontainer/setupClaude.sh",
+  "postAttachCommand": "code --install-extension apps/extension/aida-instrumentation.vsix",
+  "forwardPorts": [3000, 5173],
+  "customizations": {
+    "vscode": {
+      "extensions": ["anthropic.claude-code", "dbaeumer.vscode-eslint", "ms-toolsai.jupyter"],
+      "settings": {
+        "claudeCode.disableLoginPrompt": true
+      }
+    }
+  }
+}

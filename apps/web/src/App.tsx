@@ -3,35 +3,22 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import "./App.css";
 import Classrooms from "./features/classrooms/Classrooms";
-import { assignedClassrooms } from "./features/classrooms/classroom-data";
+import { useTeacherViewModel } from "./features/teacher/useTeacherViewModel";
+import { useStudentViewModel } from "./features/student/useStudentViewModel";
+import type { AssistantMode } from "./features/teacher/teacher.types";
 
 type Page = "Overview" | "Classrooms" | "Assignments" | "Course materials" | "Student workspace";
-type HelpLevel = "Hints only" | "Explain concepts" | "Open help" | "Assistant off";
 
-type Assignment = { id: string; title: string; classId: string; due: string; help: HelpLevel; instructions: string };
-type Material = { id: string; name: string; classId: string; size: string };
-type Workspace = { text: string; submitted: boolean };
-
-const initialAssignments: Assignment[] = [
-  { id: "cell-lab", title: "A closer look at cells", classId: "cells", due: "", help: "Hints only", instructions: "Compare plant and animal cells. Write a hypothesis, describe your observations, and explain how each structure supports the cell. Use evidence from your class material." },
-  { id: "circuit-lab", title: "Build a better circuit", classId: "electricity", due: "", help: "Explain concepts", instructions: "Investigate how adding a bulb changes a series circuit. Record your prediction, procedure, observations, and conclusion." },
-];
 const pages: Page[] = ["Overview", "Classrooms", "Assignments", "Course materials", "Student workspace"];
-const helpLevels: HelpLevel[] = ["Hints only", "Explain concepts", "Open help", "Assistant off"];
 
-function useStoredState<T,>(key: string, fallback: T) {
-  const [value, setValue] = useState<T>(() => {
-    try { const stored = localStorage.getItem(key); return stored ? JSON.parse(stored) as T : fallback; }
-    catch { return fallback; }
-  });
-  const [saveError, setSaveError] = useState(false);
-  function update(next: T) {
-    setValue(next);
-    try { localStorage.setItem(key, JSON.stringify(next)); setSaveError(false); }
-    catch { setSaveError(true); }
-  }
-  return [value, update, saveError] as const;
-}
+// Maps the DB assistant_mode values to human-readable labels shown in the UI.
+const assistantModeLabels: Record<AssistantMode, string> = {
+  hints: "Hints only",
+  explain: "Explain concepts",
+  open: "Open help",
+  off: "Assistant off",
+};
+const assistantModes: AssistantMode[] = ["hints", "explain", "open", "off"];
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
   const mascots: Record<string, string> = {
@@ -65,83 +52,232 @@ function ModalShell({ children, onClose }: { children: ReactNode; onClose: () =>
 }
 
 function App() {
+  const vm = useTeacherViewModel();
+  const svm = useStudentViewModel();
+
   const [page, setPage] = useState<Page>("Classrooms");
   const [menuOpen, setMenuOpen] = useState(false);
   const [modal, setModal] = useState<"assignment" | null>(null);
-  const classes = assignedClassrooms;
-  const [activeClassroomId, setActiveClassroomId] = useState<string | null>(null);
-  const [assignments, setAssignments, assignmentError] = useStoredState("penguin.assignments.v1", initialAssignments);
-  const [materials, setMaterials, materialError] = useStoredState<Material[]>("penguin.materials.v1", []);
-  const [workspaces, setWorkspaces, workspaceError] = useStoredState<Record<string, Workspace>>("penguin.workspaces.v1", {});
-  const [activeAssignment, setActiveAssignment] = useState("cell-lab");
-  const [selectedClass, setSelectedClass] = useState("all");
+  const [activeClassroomId, setActiveClassroomId] = useState<number | null>(null);
+  const [activeAssignmentId, setActiveAssignmentId] = useState<number>(vm.assignments[0]?.id ?? 0);
+  const [selectedCourseId, setSelectedCourseId] = useState<number | "all">("all");
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
-  const currentAssignment = assignments.find(item => item.id === activeAssignment) ?? assignments[0];
-  const workspace = workspaces[currentAssignment?.id ?? ""] ?? { text: "", submitted: false };
-  const visibleAssignments = assignments.filter(item => (selectedClass === "all" || item.classId === selectedClass) && item.title.toLowerCase().includes(search.toLowerCase()));
-  const getClass = (id: string) => classes.find(item => item.id === id);
+  const [chatInput, setChatInput] = useState("");
+
+  // Teacher view — which assignment is open in teacher assignments list
+  const currentTeacherAssignment = vm.assignments.find(a => a.id === activeAssignmentId) ?? vm.assignments[0];
+
+  // Student view — the same assignment looked up from the student VM (published only, no canvas_id etc.)
+  const currentStudentAssignment = svm.assignments.find(a => a.id === activeAssignmentId) ?? svm.assignments[0];
+  const studentSubmission = svm.getSubmission(currentStudentAssignment?.id ?? 0);
+
+  const visibleAssignments = vm.assignments.filter(a =>
+    (selectedCourseId === "all" || a.course_id === selectedCourseId) &&
+    a.title.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const getCourse = (id: number) => vm.courses.find(c => c.id === id);
 
   function navigate(next: Page) { setPage(next); setMenuOpen(false); setSearch(""); setNotice(""); if (next === "Classrooms") setActiveClassroomId(null); }
-  function openClassroom(id: string) { navigate("Classrooms"); setActiveClassroomId(id); }
-  function openWorkspace(id: string) { setActiveAssignment(id); navigate("Student workspace"); }
-  function saveForm(event: FormEvent<HTMLFormElement>) {
+  function openClassroom(id: number) { navigate("Classrooms"); setActiveClassroomId(id); }
+  function openWorkspace(id: number) { setActiveAssignmentId(id); navigate("Student workspace"); }
+
+  async function handleSubmitWork() {
+    if (!currentStudentAssignment) return;
+    let sub = svm.getSubmission(currentStudentAssignment.id);
+    if (!sub) sub = await svm.openSubmission(currentStudentAssignment.id);
+    if (sub.status === "submitted") return; // already submitted
+    await svm.submitWork(sub.id);
+  }
+
+  async function handleSendChat() {
+    const msg = chatInput.trim();
+    if (!msg || !currentStudentAssignment) return;
+    setChatInput("");
+    await svm.sendMessage({ assignment_id: currentStudentAssignment.id, content: msg });
+  }
+
+  async function saveForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const title = String(data.get("title") ?? "").trim();
     if (!title) return;
-    const id = crypto.randomUUID();
-    if (!classes.some(item => item.id === String(data.get("classId")))) return;
-    setAssignments([...assignments, { id, title, classId: String(data.get("classId")), due: String(data.get("due")), help: String(data.get("help")) as HelpLevel, instructions: String(data.get("instructions")).trim() }]);
-    setSelectedClass("all"); navigate("Assignments");
+    const courseId = Number(data.get("courseId"));
+    if (!vm.courses.some(c => c.id === courseId)) return;
+    await vm.createAssignment({
+      course_id: courseId,
+      kind: "assignment",
+      title,
+      instructions: String(data.get("instructions") ?? "").trim(),
+      assistant_mode: String(data.get("assistant_mode")) as AssistantMode,
+      due_at: String(data.get("due_at") || "") || null,
+      rubric: null,
+      time_limit_minutes: null,
+    });
+    setSelectedCourseId("all");
+    navigate("Assignments");
     setModal(null);
   }
-  function updateWorkspace(next: Workspace) {
-    if (currentAssignment) setWorkspaces({ ...workspaces, [currentAssignment.id]: next });
+
+  // Adapt vm.courses → the shape Classrooms.tsx expects (string ids, students array)
+  const classroomsForLegacyComponent = vm.courses.map(c => ({
+    id: String(c.id),
+    name: c.name,
+    grade: c.grade,
+    unit: `Grade ${c.grade} Science`,
+    students: vm.getStudents(c.id).map(s => ({
+      id: String(s.id),
+      displayName: s.display_name,
+      username: s.username,
+    })),
+  }));
+
+  function assignmentList(items: typeof vm.assignments) {
+    return items.length
+      ? <div className="assignment-list">{items.map(item => {
+          const course = getCourse(item.course_id);
+          return <button className="assignment-row" key={item.id} onClick={() => openWorkspace(item.id)}>
+            <span className={`subject-icon ${item.course_id === 2 ? "amber" : ""}`}><Icon name="Assignments" /></span>
+            <span className="row-title"><strong>{item.title}</strong><small>{course?.name} · Grade {course?.grade}</small></span>
+            <span className="pill">{assistantModeLabels[item.assistant_mode]}</span>
+            <span className="due">{item.due_at ? new Date(item.due_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "No due date"}</span>
+            <Icon name="arrow" size={18} />
+          </button>;
+        })}</div>
+      : <div className="empty-state"><Icon name="Assignments" size={30} /><h3>No assignments found</h3><p>Create an assignment or change your filters.</p></div>;
   }
-  function assignmentList(items: Assignment[]) {
-    return items.length ? <div className="assignment-list">{items.map(item => <button className="assignment-row" key={item.id} onClick={() => openWorkspace(item.id)}>
-      <span className={`subject-icon ${item.classId === "electricity" ? "amber" : ""}`}><Icon name="Assignments" /></span>
-      <span className="row-title"><strong>{item.title}</strong><small>{getClass(item.classId)?.name} · {getClass(item.classId)?.unit}</small></span>
-      <span className="pill">{item.help}</span><span className="due">{item.due ? new Date(`${item.due}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "No due date"}</span><Icon name="arrow" size={18} />
-    </button>)}</div> : <div className="empty-state"><Icon name="Assignments" size={30} /><h3>No assignments found</h3><p>Create an assignment or change your filters.</p></div>;
-  }
+
+  const initials = `${vm.teacher.first_name[0]}${vm.teacher.last_name[0]}`;
 
   return <div className="app-shell">
     <aside className={`sidebar ${menuOpen ? "is-open" : ""}`} aria-label="Main navigation">
       <a className="brand" href="#" onClick={event => { event.preventDefault(); navigate("Overview"); }}><img className="brand-logo" src={penguinLogo} width="100" height="100" alt="" />penguin<span className="brand-dot">.</span></a>
       <div className="workspace-label">YOUR WORKSPACE <span>DEMO</span></div>
-      <nav>{pages.map(item => <button key={item} className={`nav-item ${page === item ? "active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={() => navigate(item)}><Icon name={item} size={30} />{item}{item === "Classrooms" && <span className="nav-count">{classes.length}</span>}</button>)}</nav>
-      <div className="sidebar-bottom"><div className="sidebar-note"><Icon name="spark" /><strong>Every learner<br />belongs in the huddle.</strong><p>A little support. A big world to explore together.</p></div><div className="profile"><span className="avatar">AT</span><div><strong>Alex Taylor</strong><small>Teacher · Demo account</small></div></div></div>
+      <nav>{pages.map(item => <button key={item} className={`nav-item ${page === item ? "active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={() => navigate(item)}><Icon name={item} size={30} />{item}{item === "Classrooms" && <span className="nav-count">{vm.courses.length}</span>}</button>)}</nav>
+      <div className="sidebar-bottom"><div className="sidebar-note"><Icon name="spark" /><strong>Every learner<br />belongs in the huddle.</strong><p>A little support. A big world to explore together.</p></div><div className="profile"><span className="avatar">{initials}</span><div><strong>{vm.teacher.first_name} {vm.teacher.last_name}</strong><small>Teacher · Demo account</small></div></div></div>
     </aside>
     <div className="main-shell">
       <header className="topbar"><div className="breadcrumb"><button className="icon-button mobile-menu" aria-label="Toggle navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}><Icon name="menu" /></button><span>Workspace</span><span className="slash">/</span><strong>{page}</strong></div><span className="demo-label"><span /> Synthetic classroom demo</span></header>
       <main id="main-content">
-        <div className="page-heading"><div><div className="eyebrow">WELCOME TO YOUR COLONY</div><h1>{page === "Overview" ? "Big discoveries start with a little curiosity." : page === "Classrooms" && activeClassroomId ? classes.find(item => item.id === activeClassroomId)?.name ?? "Classrooms" : page}</h1><p>{page === "Overview" ? "Gather your learners. Share ideas. Explore science together." : page === "Classrooms" ? "Your assigned classrooms and student rosters, all in one place." : page === "Assignments" ? "Give every investigation a clear starting point." : page === "Course materials" ? "Keep your classroom knowledge in one place." : "A place to think, investigate, and make connections."}</p></div>{page !== "Classrooms" && <button className="button primary" disabled={!classes.length} onClick={() => setModal("assignment")}><Icon name="plus" size={18} />New assignment</button>}</div>
+        <div className="page-heading"><div><div className="eyebrow">WELCOME TO YOUR COLONY</div><h1>{page === "Overview" ? "Big discoveries start with a little curiosity." : page === "Classrooms" && activeClassroomId ? getCourse(activeClassroomId)?.name ?? "Classrooms" : page}</h1><p>{page === "Overview" ? "Gather your learners. Share ideas. Explore science together." : page === "Classrooms" ? "Your assigned classrooms and student rosters, all in one place." : page === "Assignments" ? "Give every investigation a clear starting point." : page === "Course materials" ? "Keep your classroom knowledge in one place." : "A place to think, investigate, and make connections."}</p></div>{page !== "Classrooms" && <button className="button primary" disabled={!vm.courses.length} onClick={() => setModal("assignment")}><Icon name="plus" size={18} />New assignment</button>}</div>
         <div className="demo-banner"><Icon name="check" size={16} /><span>Sample classrooms and students are shown for this teacher demo. Live administrator assignments are not connected yet.</span></div>
-        {(assignmentError || materialError || workspaceError) && <p role="alert" className="error-banner">Browser storage is unavailable or full. Your latest changes are only saved for this session.</p>}
         {notice && <div role="status" className="notice">{notice}<button className="icon-button" aria-label="Dismiss notification" onClick={() => setNotice("")}><Icon name="close" size={16} /></button></div>}
 
         {page === "Overview" && <>
           <section className="welcome-card"><div className="welcome-copy"><span className="pill light">SMALL STEPS. BIG DISCOVERIES.</span><h2>Learning is better<br /><em>in a huddle.</em></h2><p>A curious penguin. A classroom of explorers.<br />Bring your colony together and explore something new.</p><button className="button dark" onClick={() => navigate("Classrooms")}>View classrooms <Icon name="arrow" size={18} /></button></div><div className="penguin-scene" aria-hidden="true" /></section>
-          <section className="stats" aria-label="Workspace totals">{[{ label: "Your classrooms", value: classes.length, icon: "Classrooms", caption: "Spaces to learn together" }, { label: "Assignments", value: assignments.length, icon: "Assignments", caption: "Questions worth exploring" }, { label: "Course materials", value: materials.length, icon: "Course materials", caption: "Resources for discovery" }].map(stat => <button className="stat-card" key={stat.label} onClick={() => navigate(stat.icon as Page)}><div><span>{stat.label}</span><strong>{stat.value.toString().padStart(2, "0")}</strong><small>{stat.caption}</small></div><span className="stat-icon"><Icon name={stat.icon} /></span></button>)}</section>
-          <div className="overview-grid"><section className="panel"><div className="section-heading"><div><h2>Your classrooms</h2><p>Your learning colonies. Ready to explore.</p></div><button className="text-button" onClick={() => navigate("Classrooms")}>View all <Icon name="arrow" size={16} /></button></div><div className="class-grid">{classes.slice(0, 2).map((item, index) => <button className={`class-card tone-${index % 2}`} key={item.id} onClick={() => openClassroom(item.id)}><div className="class-card-top"><span className="class-mark"><img src={penguinScience} width="32" height="32" alt="" /></span><span className="pill">{item.students.length} students</span></div><h3>{item.name}</h3><p>{item.unit}</p><div className="class-card-footer">Open classroom <Icon name="arrow" size={18} /></div></button>)}</div></section><section className="idea-card"><img className="idea-mascot" src={penguinLogo} width="64" height="64" alt="" /><div className="eyebrow">A LITTLE HELP FROM PENGUIN</div><h2>A helpful nudge.<br />A new discovery.</h2><p>Choose how much help students get, from gentle hints to deeper explanations.</p><button className="text-button" onClick={() => setModal("assignment")}>Set up an assignment <Icon name="arrow" size={17} /></button></section></div>
-          <section className="panel"><div className="section-heading"><div><h2>Ready for exploration</h2><p>Pick up an investigation in the student demo.</p></div><button className="text-button" onClick={() => { setSelectedClass("all"); navigate("Assignments"); }}>All assignments <Icon name="arrow" size={16} /></button></div>{assignmentList(assignments.slice(0, 3))}</section>
+          <section className="stats" aria-label="Workspace totals">{[{ label: "Your classrooms", value: vm.courses.length, icon: "Classrooms", caption: "Spaces to learn together" }, { label: "Assignments", value: vm.assignments.length, icon: "Assignments", caption: "Questions worth exploring" }, { label: "Course materials", value: vm.materials.length, icon: "Course materials", caption: "Resources for discovery" }].map(stat => <button className="stat-card" key={stat.label} onClick={() => navigate(stat.icon as Page)}><div><span>{stat.label}</span><strong>{stat.value.toString().padStart(2, "0")}</strong><small>{stat.caption}</small></div><span className="stat-icon"><Icon name={stat.icon} /></span></button>)}</section>
+          <div className="overview-grid"><section className="panel"><div className="section-heading"><div><h2>Your classrooms</h2><p>Your learning colonies. Ready to explore.</p></div><button className="text-button" onClick={() => navigate("Classrooms")}>View all <Icon name="arrow" size={16} /></button></div><div className="class-grid">{vm.courses.slice(0, 2).map((item, index) => <button className={`class-card tone-${index % 2}`} key={item.id} onClick={() => openClassroom(item.id)}><div className="class-card-top"><span className="class-mark"><img src={penguinScience} width="32" height="32" alt="" /></span><span className="pill">{vm.getStudents(item.id).length} students</span></div><h3>{item.name}</h3><p>Grade {item.grade} Science</p><div className="class-card-footer">Open classroom <Icon name="arrow" size={18} /></div></button>)}</div></section><section className="idea-card"><img className="idea-mascot" src={penguinLogo} width="64" height="64" alt="" /><div className="eyebrow">A LITTLE HELP FROM PENGUIN</div><h2>A helpful nudge.<br />A new discovery.</h2><p>Choose how much help students get, from gentle hints to deeper explanations.</p><button className="text-button" onClick={() => setModal("assignment")}>Set up an assignment <Icon name="arrow" size={17} /></button></section></div>
+          <section className="panel"><div className="section-heading"><div><h2>Ready for exploration</h2><p>Pick up an investigation in the student demo.</p></div><button className="text-button" onClick={() => { setSelectedCourseId("all"); navigate("Assignments"); }}>All assignments <Icon name="arrow" size={16} /></button></div>{assignmentList(vm.assignments.slice(0, 3))}</section>
         </>}
 
-        {page === "Classrooms" && <Classrooms classrooms={classes} activeClassroomId={activeClassroomId} onOpenClassroom={openClassroom} onBack={() => setActiveClassroomId(null)} />}
+        {page === "Classrooms" && <Classrooms classrooms={classroomsForLegacyComponent} activeClassroomId={activeClassroomId !== null ? String(activeClassroomId) : null} onOpenClassroom={id => openClassroom(Number(id))} onBack={() => setActiveClassroomId(null)} />}
 
-        {page === "Assignments" && <section className="panel"><div className="filters"><label className="search-label">Search assignments<input placeholder="Search by title…" value={search} onChange={event => setSearch(event.target.value)} /></label><label>Class<select value={selectedClass} onChange={event => setSelectedClass(event.target.value)}><option value="all">All classes</option>{classes.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><span className="result-count">{visibleAssignments.length} assignments</span></div>{assignmentList(visibleAssignments)}</section>}
+        {page === "Assignments" && <section className="panel"><div className="filters"><label className="search-label">Search assignments<input placeholder="Search by title…" value={search} onChange={event => setSearch(event.target.value)} /></label><label>Class<select value={selectedCourseId} onChange={event => setSelectedCourseId(event.target.value === "all" ? "all" : Number(event.target.value))}><option value="all">All classes</option>{vm.courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><span className="result-count">{visibleAssignments.length} assignments</span></div>{assignmentList(visibleAssignments)}</section>}
 
-        {page === "Course materials" && <section className="panel"><div className="section-heading"><div><h2>Your resource library</h2><p>Organize course materials by class.</p></div></div><div className="upload-area"><span className="stat-icon"><Icon name="upload" size={26} /></span><h3>A starting point for every discovery</h3><p>Add PDF, DOCX, PPTX, TXT, or Markdown files.</p><label className="upload-class">Class<select value={selectedClass === "all" ? classes[0]?.id : selectedClass} onChange={event => setSelectedClass(event.target.value)}>{classes.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label className="button primary upload-button"><Icon name="plus" size={18} />Choose files<input aria-label="Choose course material files" type="file" multiple accept=".pdf,.docx,.pptx,.txt,.md,.markdown" onChange={event => { const files = Array.from(event.target.files ?? []); const allowed = files.filter(file => /\.(pdf|docx|pptx|txt|md|markdown)$/i.test(file.name)); setMaterials([...materials, ...allowed.map(file => ({ id: crypto.randomUUID(), name: file.name, classId: selectedClass === "all" ? classes[0].id : selectedClass, size: `${Math.max(1, Math.round(file.size / 1024))} KB` }))]); setNotice(`${allowed.length} file reference(s) added. Only names and sizes are saved; document contents are not uploaded or available to AI.${allowed.length < files.length ? " Unsupported files were skipped." : ""}`); event.target.value = ""; }} /></label><small>Demo: stores file references only. Document ingestion is not connected.</small></div>{materials.map(item => <div className="material-row" key={item.id}><Icon name="Course materials" /><div><strong>{item.name}</strong><small>{getClass(item.classId)?.name} · {item.size} · Reference only</small></div><button className="text-button" onClick={() => setMaterials(materials.filter(material => material.id !== item.id))} aria-label={`Remove ${item.name}`}>Remove</button></div>)}</section>}
+        {page === "Course materials" && <section className="panel"><div className="section-heading"><div><h2>Your resource library</h2><p>Organize course materials by class.</p></div></div><div className="upload-area"><span className="stat-icon"><Icon name="upload" size={26} /></span><h3>A starting point for every discovery</h3><p>Add PDF, DOCX, PPTX, TXT, or Markdown files.</p><label className="upload-class">Class<select value={selectedCourseId === "all" ? vm.courses[0]?.id : selectedCourseId} onChange={event => setSelectedCourseId(Number(event.target.value))}>{vm.courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label className="button primary upload-button"><Icon name="plus" size={18} />Choose files<input aria-label="Choose course material files" type="file" multiple accept=".pdf,.docx,.pptx,.txt,.md,.markdown" onChange={async event => { const files = Array.from(event.target.files ?? []); const allowed = files.filter(file => /\.(pdf|docx|pptx|txt|md|markdown)$/i.test(file.name)); const courseId = selectedCourseId === "all" ? (vm.courses[0]?.id ?? null) : selectedCourseId; await Promise.all(allowed.map(file => vm.uploadMaterial({ course_id: courseId, file, unit: null }))); setNotice(`${allowed.length} file reference(s) added. Only names and sizes are saved; document contents are not uploaded or available to AI.${allowed.length < files.length ? " Unsupported files were skipped." : ""}`); event.target.value = ""; }} /></label><small>Demo: stores file references only. Document ingestion is not connected.</small></div>{vm.materials.map(item => { const course = getCourse(item.course_id ?? 0); return <div className="material-row" key={item.id}><Icon name="Course materials" /><div><strong>{item.file_name}</strong><small>{course?.name ?? "General library"} · {Math.max(1, Math.round(item.size_bytes / 1024))} KB · Reference only</small></div><button className="text-button" onClick={() => vm.deleteMaterial(item.id)} aria-label={`Remove ${item.file_name}`}>Remove</button></div>; })}</section>}
 
-        {page === "Student workspace" && <><div className="workspace-toolbar"><label>Assignment<select value={currentAssignment?.id ?? ""} onChange={event => setActiveAssignment(event.target.value)}>{assignments.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label><span className="pill">Student demo</span></div>{currentAssignment && <div className="student-layout"><aside className="workspace-panel"><div className="eyebrow">EXPLORER</div><h3>{currentAssignment.title}</h3><span className="pill">{getClass(currentAssignment.classId)?.name}</span><h4>Assignment instructions</h4><p>{currentAssignment.instructions}</p><h4>Course material</h4><p>{materials.filter(item => item.classId === currentAssignment.classId).length} file references. Document content is not connected yet.</p></aside><section className="editor-panel"><div className="editor-header"><span><Icon name="Assignments" size={17} /> Investigation notes</span><small>{workspace.submitted ? "Submitted · Locked" : workspaceError ? "Not saved to browser" : "Saved in this browser"}</small></div><label className="sr-only" htmlFor="investigation">Investigation notes</label><textarea id="investigation" value={workspace.text} disabled={workspace.submitted} placeholder={"Start with a question…\n\nHypothesis\nWhat do you think will happen?\n\nObservations\nWhat did you notice?\n\nConclusion\nWhat does the evidence tell you?"} onChange={event => updateWorkspace({ text: event.target.value, submitted: false })} /><div className="editor-footer"><span>{workspace.text.trim() ? workspace.text.trim().split(/\s+/).length : 0} words</span><button className="button primary" disabled={!workspace.text.trim()} onClick={() => updateWorkspace({ ...workspace, submitted: !workspace.submitted })}>{workspace.submitted ? "Reopen as teacher" : "Submit demo work"}<Icon name="check" size={16} /></button></div></section><aside className="workspace-panel assistant-panel"><span className="idea-icon"><Icon name="spark" /></span><h3>Your thinking partner</h3><span className="pill">{currentAssignment.help}</span><p>{currentAssignment.help === "Assistant off" ? "The assistant is switched off for this assignment." : "A little guidance to help you reach your own conclusions."}</p><div className="assistant-placeholder"><strong>AI assistant coming next</strong><p>Course-grounded chat and document citations need the server integration. No messages are sent from this demo.</p></div></aside></div>}</>}
+        {page === "Student workspace" && <>
+          <div className="workspace-toolbar">
+            <label>Assignment<select value={currentStudentAssignment?.id ?? ""} onChange={event => setActiveAssignmentId(Number(event.target.value))}>
+              {svm.assignments.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}
+            </select></label>
+            <span className="pill">{svm.profile.display_name}</span>
+            {studentSubmission?.status === "submitted" && <span className="pill">Submitted</span>}
+            {studentSubmission?.score !== null && studentSubmission?.score !== undefined && <span className="pill">Score: {studentSubmission.score}</span>}
+          </div>
+          {currentStudentAssignment && <div className="student-layout">
+            {/* Explorer panel — student sees instructions, materials, schedule */}
+            <aside className="workspace-panel">
+              <div className="eyebrow">EXPLORER</div>
+              <h3>{currentStudentAssignment.title}</h3>
+              <span className="pill">{svm.courses.find(c => c.id === currentStudentAssignment.course_id)?.name}</span>
+              <h4>Teacher</h4>
+              <p>{svm.courses.find(c => c.id === currentStudentAssignment.course_id)?.teacher.first_name} {svm.courses.find(c => c.id === currentStudentAssignment.course_id)?.teacher.last_name}</p>
+              <h4>Assignment instructions</h4>
+              <p>{currentStudentAssignment.instructions}</p>
+              {currentStudentAssignment.rubric && <>
+                <h4>Rubric</h4>
+                {currentStudentAssignment.rubric.map(c => <div key={c.id}><strong>{c.label}</strong></div>)}
+              </>}
+              <h4>Course material</h4>
+              {svm.getMaterials(currentStudentAssignment.course_id).map(m => (
+                <div key={m.id} className="material-row"><Icon name="Course materials" size={16} /><small>{m.file_name}{m.unit ? ` · ${m.unit}` : ""}</small></div>
+              ))}
+              {svm.getMaterials(currentStudentAssignment.course_id).length === 0 && <p className="small-copy">No materials yet.</p>}
+              <h4>Upcoming</h4>
+              {svm.schedule.length === 0
+                ? <p className="small-copy">Nothing due.</p>
+                : svm.schedule.map(item => <div key={item.assignment_id} className="material-row"><small><strong>{item.assignment_title}</strong><br />{new Date(item.due_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</small></div>)
+              }
+            </aside>
+            {/* Editor panel — student writes their work */}
+            <section className="editor-panel">
+              <div className="editor-header">
+                <span><Icon name="Assignments" size={17} /> Investigation notes</span>
+                <small>{studentSubmission?.status === "submitted" ? "Submitted · Locked" : "In progress"}</small>
+              </div>
+              <label className="sr-only" htmlFor="investigation">Investigation notes</label>
+              <textarea
+                id="investigation"
+                disabled={studentSubmission?.status === "submitted"}
+                placeholder={"Start with a question…\n\nHypothesis\nWhat do you think will happen?\n\nObservations\nWhat did you notice?\n\nConclusion\nWhat does the evidence tell you?"}
+              />
+              <div className="editor-footer">
+                <button
+                  className="button primary"
+                  disabled={studentSubmission?.status === "submitted"}
+                  onClick={handleSubmitWork}
+                >
+                  {studentSubmission?.status === "submitted" ? "Submitted" : "Submit work"}
+                  <Icon name="check" size={16} />
+                </button>
+              </div>
+            </section>
+            {/* Assistant panel — student sees only what's allowed by assistant_mode */}
+            <aside className="workspace-panel assistant-panel">
+              <span className="idea-icon"><Icon name="spark" size={28} /></span>
+              <div className="eyebrow">PENGUIN ASSISTANT</div>
+              <h3>Ask a question</h3>
+              {currentStudentAssignment.assistant_mode === "off"
+                ? <p>The assistant is switched off for this assignment.</p>
+                : <>
+                  <p className="small-copy">Mode: <strong>{assistantModeLabels[currentStudentAssignment.assistant_mode]}</strong></p>
+                  <div className="chat-history">
+                    {svm.chatHistory.length === 0 && <p className="small-copy">No messages yet. Ask a question below.</p>}
+                    {svm.chatHistory.map(msg => (
+                      <div key={msg.id} className={`chat-msg chat-msg--${msg.role}`}>
+                        <strong>{msg.role === "user" ? svm.profile.display_name : "Penguin"}</strong>
+                        <p>{msg.content}</p>
+                        {msg.flagged && <small className="flagged-notice">This message was reviewed.</small>}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="chat-input-row">
+                    <label className="sr-only" htmlFor="chat-input">Your question</label>
+                    <input
+                      id="chat-input"
+                      value={chatInput}
+                      onChange={e => setChatInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSendChat(); } }}
+                      placeholder="Ask a question…"
+                      disabled={studentSubmission?.status === "submitted"}
+                    />
+                    <button className="button primary" onClick={() => void handleSendChat()} disabled={!chatInput.trim() || studentSubmission?.status === "submitted"}>
+                      Send
+                    </button>
+                  </div>
+                </>
+              }
+            </aside>
+          </div>}
+        </>}
+
         <footer className="page-footer"><span>penguin<span className="brand-dot">.</span> <span>Curious minds. One happy colony.</span></span><span>Made for curious minds · Grades 8–9</span></footer>
       </main>
     </div>
-    {modal && <ModalShell onClose={() => setModal(null)}><section className="modal"><div className="section-heading"><div><div className="eyebrow">START SOMETHING GOOD</div><h2 id="modal-title">Create an assignment</h2></div><button className="icon-button" aria-label="Close dialog" onClick={() => setModal(null)}><Icon name="close" /></button></div><form onSubmit={saveForm}><label>Assignment title<input name="title" autoFocus required maxLength={100} placeholder="e.g. Exploring plant cells" /></label><label>Classroom<select name="classId" required defaultValue={selectedClass === "all" ? classes[0]?.id : selectedClass}>{classes.map(item => <option key={item.id} value={item.id}>{item.name} · Grade {item.grade}</option>)}</select></label><label>Instructions<textarea name="instructions" required rows={4} placeholder="What should students investigate?" /></label><div className="form-grid"><label>Due date (optional)<input type="date" name="due" /></label><label>AI help level<select name="help">{helpLevels.map(level => <option key={level}>{level}</option>)}</select></label></div><p className="small-copy">Saved as a local demo. Publishing and AI settings require backend integration.</p><div className="modal-actions"><button type="button" className="button secondary" onClick={() => setModal(null)}>Cancel</button><button className="button primary" type="submit" disabled={!classes.length}>Create assignment<Icon name="arrow" size={17} /></button></div></form></section></ModalShell>}
+    {modal && <ModalShell onClose={() => setModal(null)}><section className="modal"><div className="section-heading"><div><div className="eyebrow">START SOMETHING GOOD</div><h2 id="modal-title">Create an assignment</h2></div><button className="icon-button" aria-label="Close dialog" onClick={() => setModal(null)}><Icon name="close" /></button></div><form onSubmit={saveForm}><label>Assignment title<input name="title" autoFocus required maxLength={100} placeholder="e.g. Exploring plant cells" /></label><label>Classroom<select name="courseId" required defaultValue={selectedCourseId === "all" ? vm.courses[0]?.id : selectedCourseId}>{vm.courses.map(c => <option key={c.id} value={c.id}>{c.name} · Grade {c.grade}</option>)}</select></label><label>Instructions<textarea name="instructions" required rows={4} placeholder="What should students investigate?" /></label><div className="form-grid"><label>Due date (optional)<input type="date" name="due_at" /></label><label>AI help level<select name="assistant_mode">{assistantModes.map(m => <option key={m} value={m}>{assistantModeLabels[m]}</option>)}</select></label></div><p className="small-copy">Saved as a local demo. Publishing and AI settings require backend integration.</p><div className="modal-actions"><button type="button" className="button secondary" onClick={() => setModal(null)}>Cancel</button><button className="button primary" type="submit" disabled={!vm.courses.length}>Create assignment<Icon name="arrow" size={17} /></button></div></form></section></ModalShell>}
   </div>;
 }
 
 export default App;
-
